@@ -4,3 +4,5 @@
 
 #IDE settings
 .vscode/
+.fake
+.ionide

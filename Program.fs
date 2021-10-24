@@ -94,7 +94,19 @@ let main argv =
 
     // let token = new CancellationTokenSource()
     // token.CancelAfter 5000
-    // produceMessage host exchange routingKey token
+    // produceMessageSync host exchange routingKey token
+
+    async {
+        let token = new CancellationTokenSource()
+        token.CancelAfter 5000
+        seq {
+            (produceMessage host exchange routingKey token);
+            (readInputAsync()); 
+        }
+        |> Async.Parallel
+        |> Async.RunSynchronously
+    } 
+    |> Async.RunSynchronously
 
     // setup()
     // readInput()
