@@ -36,7 +36,7 @@ let rec readInputAsync () = async {
     | input when input.StartsWith("~") -> handleCommand input 
     | _ -> handleInput input
 
-    readInputAsync()
+    readInputAsync() 
 }
 
 let processCommand command =
