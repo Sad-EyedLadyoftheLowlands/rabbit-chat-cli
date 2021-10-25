@@ -33,7 +33,6 @@ type RabbitUser = {
 }
 
 type Settings = YamlConfig<"Config.yaml">
-let config = Settings()
 
 let printWelcome () =
     printfn "%s" "********** WELCOME TO RABBIT CHAT **********"
@@ -114,30 +113,25 @@ let subscribeMq (token : CancellationTokenSource) =
     while not token.IsCancellationRequested do
         Thread.Sleep(500)
 
+let sendMessageTest () =
+    {
+        SendingUserId = 1;
+        Content = "test from f#";
+        RoomId = 4;
+    }
+    |> sendMessage
+    |> printfn "%s"
+
+let changeConfigTest () =
+    let config = Settings()
+    config.Authentication.Username <- "newusername"
+    config.Save("Config.yaml")
+
 [<EntryPoint>]
 let main argv =
-    let test = config
-    printfn "%s" test.Authentication.Username
-    test.Authentication.Username <- "newusername"
-    printfn "%s" test.Authentication.Username
-
-    test.Save("Config.yaml")
-    
-
     let token = new CancellationTokenSource()
-    token.CancelAfter 60000
     // produceMessage token
     // subscribeMq token
-    
-    // {
-    //     SendingUserId = 1;
-    //     Content = "test from f#";
-    //     RoomId = 4;
-    // }
-    // |> sendMessage
-    // |> JsonSerializer.Serialize
-    // |> printfn "%A"
-    // |> printfn "%s"
 
     // setup()
     // readInput()
