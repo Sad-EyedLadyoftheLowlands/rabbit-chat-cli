@@ -2,10 +2,10 @@ open System
 open System.Threading
 open System.Text
 open System.Text.Json
-// open System.Net.Http
 open RabbitMQ.Client
 open RabbitMQ.Client.Events
 open FSharp.Data
+open FSharp.Configuration
 
 type CreateMessageRequest = {
     SendingUserId: int;
@@ -31,6 +31,9 @@ type RabbitUser = {
     roomLink: string;
     friends: RabbitUser[];
 }
+
+type Settings = YamlConfig<"Config.yaml">
+let config = Settings()
 
 let printWelcome () =
     printfn "%s" "********** WELCOME TO RABBIT CHAT **********"
@@ -113,20 +116,28 @@ let subscribeMq (token : CancellationTokenSource) =
 
 [<EntryPoint>]
 let main argv =
+    let test = config
+    printfn "%s" test.Authentication.Username
+    test.Authentication.Username <- "newusername"
+    printfn "%s" test.Authentication.Username
+
+    test.Save("Config.yaml")
+    
+
     let token = new CancellationTokenSource()
     token.CancelAfter 60000
     // produceMessage token
     // subscribeMq token
     
-    {
-        SendingUserId = 1;
-        Content = "test from f#";
-        RoomId = 4;
-    }
-    |> sendMessage
+    // {
+    //     SendingUserId = 1;
+    //     Content = "test from f#";
+    //     RoomId = 4;
+    // }
+    // |> sendMessage
     // |> JsonSerializer.Serialize
     // |> printfn "%A"
-    |> printfn "%s"
+    // |> printfn "%s"
 
     // setup()
     // readInput()
