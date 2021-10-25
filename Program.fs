@@ -15,8 +15,22 @@ type Message = {
     roomId: int;
 }
 
+type RabbitUser = {
+    rabbitUserId: int;
+    username: string;
+    password: string;
+    token: string;
+    refreshToken: string;
+    alias: string;
+    roomLink: string;
+    friends: RabbitUser[];
+}
+
 let printWelcome () =
     printfn "%s" "********** WELCOME TO RABBIT CHAT **********"
+
+let displayHelp () =
+    printfn "%s" "Display help message generated from list of commands"
 
 let setup () = 
     printWelcome()
@@ -33,12 +47,16 @@ let getRoomMessages () =
     Http.RequestString("http://localhost:5000/api/message/4")
     |> JsonSerializer.Deserialize<Message[]>
 
-let listFriends () = printfn "%s" "list"
+let getFriends () =
+    Http.RequestString("http://localhost:5000/api/user/getfriends/1")
+    |> JsonSerializer.Deserialize<RabbitUser[]>
+
+let listFriends () = 
+    getFriends()
+    |> Array.iter (fun friends -> printfn "User: %s(%s)" friends.alias friends.username)
 
 let listTestRoomMessages () =
-    let res = getRoomMessages()
-
-    res
+    getRoomMessages()
     |> Array.take 10
     |> Array.iter (fun message -> printfn "%s" message.messageContent)
 
@@ -47,11 +65,12 @@ let handleCommand input =
     match input with
     | "~quit" -> handleShutdown()
     | "~friends" -> listFriends()
+    | "~help" -> displayHelp()
     | "~testroom" -> listTestRoomMessages()
     | _ -> printfn "%s" input
 
 let rec readInput () =
-    printfn "%s" "waiting"
+    printf "%s" "> "
     let input = Console.ReadLine()
     match input with
     | input when input.StartsWith("~") -> handleCommand input 
@@ -59,25 +78,7 @@ let rec readInput () =
 
     readInput()
 
-let produceMessage (token : CancellationTokenSource) = 
-    let hostName = "localhost"
-    let exchange = "rabbit-test"
-    let routingKey = ""
-    let factory = ConnectionFactory(HostName = hostName, UserName = "guest", Password = "guest")
-    use connection = factory.CreateConnection()
-    use channel = connection.CreateModel()
-    channel.ExchangeDeclare(exchange = exchange, ``type`` = ExchangeType.Fanout, durable = false) // , auto
-
-    let rand = Random()
-
-    while not token.IsCancellationRequested do
-        let message = sprintf "%f" (rand.NextDouble())
-        let body = Encoding.UTF8.GetBytes(message)
-        printfn "publish: %s" message
-        channel.BasicPublish(exchange = exchange, routingKey = routingKey, body = ReadOnlyMemory<byte>(body))
-        Thread.Sleep(500)
-
-let subscribeTest (token : CancellationTokenSource) =
+let subscribeMq (token : CancellationTokenSource) =
     let hostName = "localhost"
     let exchange = "rabbit-test"
     let routingKey = ""
@@ -95,7 +96,7 @@ let subscribeTest (token : CancellationTokenSource) =
         printfn "consumed: %A" message))
 
     let consumeResult = channel.BasicConsume(queue = "", autoAck = true, consumer = consumer)
-    
+
     while not token.IsCancellationRequested do
         Thread.Sleep(500)
 
@@ -104,9 +105,8 @@ let main argv =
     let token = new CancellationTokenSource()
     token.CancelAfter 60000
     // produceMessage token
-    subscribeTest token
+    // subscribeMq token
     
-
     setup()
     readInput()
     0 
