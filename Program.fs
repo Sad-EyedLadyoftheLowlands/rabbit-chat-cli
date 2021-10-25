@@ -7,6 +7,12 @@ open RabbitMQ.Client
 open RabbitMQ.Client.Events
 open FSharp.Data
 
+type CreateMessageRequest = {
+    SendingUserId: int;
+    Content: string;
+    RoomId: int;
+}
+
 type Message = {
     messageId: int;
     rabbitUserId: int;
@@ -42,6 +48,11 @@ let handleInput input =
     | _ -> printfn "%s" "fuck you anyway"
 
 let handleShutdown () = Environment.Exit(0)
+
+let sendMessage (messageRequest : CreateMessageRequest) =
+    Http.RequestString("http://localhost:5000/api/message", 
+        headers = [ HttpRequestHeaders.ContentType HttpContentTypes.Json ], 
+        body = TextRequest (JsonSerializer.Serialize(messageRequest)) )
 
 let getRoomMessages () =
     Http.RequestString("http://localhost:5000/api/message/4")
@@ -107,6 +118,16 @@ let main argv =
     // produceMessage token
     // subscribeMq token
     
-    setup()
-    readInput()
+    {
+        SendingUserId = 1;
+        Content = "test from f#";
+        RoomId = 4;
+    }
+    |> sendMessage
+    // |> JsonSerializer.Serialize
+    // |> printfn "%A"
+    |> printfn "%s"
+
+    // setup()
+    // readInput()
     0 
