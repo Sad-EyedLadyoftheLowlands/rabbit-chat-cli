@@ -35,11 +35,19 @@ let getRoomMessages () =
 
 let listFriends () = printfn "%s" "list"
 
+let listTestRoomMessages () =
+    let res = getRoomMessages()
+
+    res
+    |> Array.take 10
+    |> Array.iter (fun message -> printfn "%s" message.messageContent)
+
 let handleCommand input =
     printfn "%s" "processing command"
     match input with
     | "~quit" -> handleShutdown()
     | "~friends" -> listFriends()
+    | "~testroom" -> listTestRoomMessages()
     | _ -> printfn "%s" input
 
 let rec readInput () =
@@ -69,17 +77,35 @@ let produceMessage (token : CancellationTokenSource) =
         channel.BasicPublish(exchange = exchange, routingKey = routingKey, body = ReadOnlyMemory<byte>(body))
         Thread.Sleep(500)
 
+let subscribeTest (token : CancellationTokenSource) =
+    let hostName = "localhost"
+    let exchange = "rabbit-test"
+    let routingKey = ""
+    let factory = ConnectionFactory(HostName = hostName, UserName = "guest", Password = "guest")
+    use connection = factory.CreateConnection()
+    use channel = connection.CreateModel()
+    channel.ExchangeDeclare(exchange = exchange, ``type`` = ExchangeType.Fanout, durable = false)
+    
+    let queueName = channel.QueueDeclare().QueueName
+    channel.QueueBind(queue = queueName, exchange = exchange, routingKey = routingKey);
+
+    let consumer = EventingBasicConsumer(channel)
+    consumer.Received.AddHandler(new EventHandler<BasicDeliverEventArgs>(fun sender (data:BasicDeliverEventArgs) -> 
+        let message = Encoding.UTF8.GetString(data.Body.Span)
+        printfn "consumed: %A" message))
+
+    let consumeResult = channel.BasicConsume(queue = "", autoAck = true, consumer = consumer)
+    
+    while not token.IsCancellationRequested do
+        Thread.Sleep(500)
+
 [<EntryPoint>]
 let main argv =
-    // let token = new CancellationTokenSource()
-    // token.CancelAfter 5000
+    let token = new CancellationTokenSource()
+    token.CancelAfter 60000
     // produceMessage token
-
-    let res = getRoomMessages()
+    subscribeTest token
     
-    res
-    |> Array.take 10
-    |> Array.iter (fun message -> printfn "%s" message.messageContent)
 
     setup()
     readInput()
