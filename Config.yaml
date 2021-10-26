@@ -1,5 +1,5 @@
 Authentication:
-  Username: newusername
-  Password: pass
+  Username: test
+  Password:
 Http:
   ApiURL: http://localhost:5000/api/

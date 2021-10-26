@@ -32,6 +32,11 @@ type RabbitUser = {
     friends: RabbitUser[];
 }
 
+type SimpleSignInRequest = {
+    Username: string;
+    Password: string;
+}
+
 type Settings = YamlConfig<"Config.yaml">
 let config = Settings()
 
@@ -128,11 +133,54 @@ let changeConfigTest () =
     config.Authentication.Username <- "newusername"
     config.Save("Config.yaml")
 
+let login loginRequest =
+    Http.RequestString(config.Http.ApiURL.ToString() + "auth",
+        headers = [ HttpRequestHeaders.ContentType HttpContentTypes.Json ],
+        body = TextRequest (JsonSerializer.Serialize(loginRequest)))
+
+let promptUserForLogin () =
+    printfn "%s" "No login credentials found!"
+    printf "%s" "Please enter your username: > "
+    let username = Console.ReadLine()
+    printf "%s" "Please enter your password: > "
+    let password = Console.ReadLine()
+    login {
+        Username = username;
+        Password = password;
+    }
+    // |> match res with
+    // | :? authUser as RabbitUser -> printfn "%A" authUser
+    // | :? res as string -> printfn "%A" res
+
+let isLoggedInGuard () =
+    let config = Settings()
+    let user = config.Authentication.Username
+    match user with
+    | "" -> user
+    | _ -> login {
+        Username = config.Authentication.Username;
+        Password = config.Authentication.Password;
+        }
+
 [<EntryPoint>]
 let main argv =
     let token = new CancellationTokenSource()
 
-    sendMessageTest()
+    promptUserForLogin()
+    |> printfn "%s"
+
+    // let userTest = 
+    // login {
+    //     Username = config.Authentication.Username;
+    //     Password = config.Authentication.Password;
+    // } |> ignore
+
+    // printfn "%s" "whatever"
+
+    // isLoggedInGuard()
+    // |> printfn "%s" 
+
+    // sendMessageTest()
 
     // produceMessage token
     // subscribeMq token
