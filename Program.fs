@@ -33,6 +33,7 @@ type RabbitUser = {
 }
 
 type Settings = YamlConfig<"Config.yaml">
+let config = Settings()
 
 let printWelcome () =
     printfn "%s" "********** WELCOME TO RABBIT CHAT **********"
@@ -52,16 +53,16 @@ let handleInput input =
 let handleShutdown () = Environment.Exit(0)
 
 let sendMessage (messageRequest : CreateMessageRequest) =
-    Http.RequestString("http://localhost:5000/api/message", 
+    Http.RequestString(config.Http.ApiURL.ToString() + "message",
         headers = [ HttpRequestHeaders.ContentType HttpContentTypes.Json ], 
         body = TextRequest (JsonSerializer.Serialize(messageRequest)) )
 
 let getRoomMessages () =
-    Http.RequestString("http://localhost:5000/api/message/4")
+    Http.RequestString(config.Http.ApiURL.ToString() + "message/4")
     |> JsonSerializer.Deserialize<Message[]>
 
 let getFriends () =
-    Http.RequestString("http://localhost:5000/api/user/getfriends/1")
+    Http.RequestString(config.Http.ApiURL.ToString() + "user/getfriends/1")
     |> JsonSerializer.Deserialize<RabbitUser[]>
 
 let listFriends () = 
@@ -130,6 +131,9 @@ let changeConfigTest () =
 [<EntryPoint>]
 let main argv =
     let token = new CancellationTokenSource()
+
+    sendMessageTest()
+
     // produceMessage token
     // subscribeMq token
 
